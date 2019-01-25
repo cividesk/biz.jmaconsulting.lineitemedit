@@ -104,12 +104,25 @@ function lineitemedit_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
 }
 
 function lineitemedit_civicrm_buildForm($formName, &$form) {
-  if ($formName == 'CRM_Contribute_Form_Contribution') {
+  if ($formName == 'CRM_Contribute_Form_Contribution' || $formName == 'CRM_Contribute_Form_ContributionView') {
     $contributionID = NULL;
-    if (!empty($form->_id) && ($form->_action & CRM_Core_Action::UPDATE)) {
-      $contributionID = $form->_id;
+    if ((!empty($form->_id) && ($form->_action & CRM_Core_Action::UPDATE)) || (!empty($form->get('id')) && ($form->_action & CRM_Core_Action::VIEW))) {
+      if ($formName == 'CRM_Contribute_Form_ContributionView') {
+        $contributionID = $form->get('id');
+      }
+      else {
+        $contributionID = $form->_id;
+      }
       $pricesetFieldsCount = NULL;
-      $isQuickConfig = empty($form->_lineItems) ? TRUE : FALSE;
+      if (!empty($form->_lineItems)) {
+        $itemId = key($form->_lineItems['0']);
+        if ($itemId && !empty($form->_lineItems['0'][$itemId]['price_field_id'])) {
+          $priceSetId = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceField', $form->_lineItems['0'][$itemId]['price_field_id'], 'price_set_id');
+          $isQuickConfig = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceSet', $priceSetId, 'is_quick_config');
+        }
+      } else {
+        $isQuickConfig = empty($form->_lineItems) ? TRUE : FALSE;
+      }
       // Append line-item table only if current contribution has quick config lineitem
       if ($isQuickConfig) {
         $order = civicrm_api3('Order', 'getsingle', array('id' => $contributionID));

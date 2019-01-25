@@ -62,8 +62,11 @@ CRM.$(function($) {
   action = '{/literal}{$action}{literal}'
   isNotQuickConfig = '{/literal}{$pricesetFieldsCount}{literal}';
 
-  if (!isNotQuickConfig && action == 2) {
+  if (!isNotQuickConfig && (action == 2 || action == 4)) {
     $('#totalAmountORaddLineitem, #add_item').hide();
+    if (action == 4) {
+      $('#totalAmount').hide();
+    }
   }
 
   // after form rule validation when page reloads then show only those line-item which were chosen and hide others

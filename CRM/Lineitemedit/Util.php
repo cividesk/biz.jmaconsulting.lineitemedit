@@ -926,12 +926,6 @@ ORDER BY  ps.id, pf.weight ;
     $form->assign('taxEnabled', (!empty($contributeSettings['invoicing'])));
     $form->assign('taxRates', json_encode(CRM_Core_PseudoConstant::getTaxRates()));
     $form->assign('lineItemSubmitted', json_encode($submittedValues));
-    $form->assign('currency', CRM_Core_DAO::getFieldValue(
-      'CRM_Financial_DAO_Currency',
-      ($contributionID ? CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $contributionID, 'currency') : CRM_Core_Config::singleton()->defaultCurrency),
-      'symbol',
-      'name'
-    ));
   }
 
   /**
@@ -988,14 +982,31 @@ ORDER BY  ps.id, pf.weight ;
     $priceFieldValueParams = $priceFieldValue;
     unset($priceFieldValueParams['id'], $priceFieldValueParams['name'], $priceFieldValueParams['weight']);
     for ($i = 1; $i <= 10; ++$i) {
-      $p = civicrm_api3('PriceField', 'create', array_merge($priceFieldParams, ['label' => ts('Additional Line Item') . " $i"]));
-      civicrm_api3('PriceFieldValue', 'create', array_merge(
-        $priceFieldValueParams,
-        [
-          'label' => ts('Additional Item') . " $i",
-          'price_field_id' => $p['id'],
-        ]
-      ));
+      $params = array_merge($priceFieldParams, ['label' => ts('Additional Line Item') . " $i"]);
+      $priceField = civicrm_api3('PriceField', 'get', $params)['values'];
+      if (empty($priceField)) {
+        $p = civicrm_api3('PriceField', 'create', $params);
+        civicrm_api3('PriceFieldValue', 'create', array_merge(
+          $priceFieldValueParams,
+          [
+            'label' => ts('Additional Item') . " $i",
+            'price_field_id' => $p['id'],
+          ]
+        ));
+      }
+      else {
+        civicrm_api3('PriceField', 'create', ['id' => key($priceField), 'is_active' => TRUE]);
+      }
+    }
+  }
+
+  public static function disableEnablePriceField($enable = FALSE) {
+    $priceSetID = civicrm_api3('PriceSet', 'getvalue', ['name' => 'default_contribution_amount', 'return' => 'id']);
+    $priceFields = civicrm_api3('PriceField', 'get', ['price_set_id' => $priceSetID, 'is_active' => !$enable])['values'];
+    foreach ($priceFields as $id => $value) {
+      if ($value['name'] != 'contribution_amount') {
+        civicrm_api3('PriceField', 'create', ['id' => $id, 'is_active' => $enable]);
+      }
     }
   }
 

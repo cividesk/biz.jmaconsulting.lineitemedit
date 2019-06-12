@@ -106,7 +106,7 @@ function lineitemedit_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
 function lineitemedit_civicrm_buildForm($formName, &$form) {
   if ($formName == 'CRM_Contribute_Form_Contribution' || $formName == 'CRM_Contribute_Form_ContributionView') {
     $contributionID = NULL;
-    if ((!empty($form->_id) && ($form->_action & CRM_Core_Action::UPDATE)) || (!empty($form->get('id')) && ($form->_action & CRM_Core_Action::VIEW))) {
+    if ((!empty($form->_id) && ($form->_action & CRM_Core_Action::UPDATE)) || (!empty($form->get('id')) && ($form->_action & CRM_Core_Action::VIEW))) { 
       if ($formName == 'CRM_Contribute_Form_ContributionView') {
         $contributionID = $form->get('id');
       }
@@ -173,6 +173,15 @@ function lineitemedit_civicrm_postProcess($formName, &$form) {
         ));
       }
     }
+  }
+  if ('CRM_Batch_Form_Entry' == $formName) {
+    CRM_Lineitemedit_Util::disableEnablePriceField(TRUE);
+  }
+}
+
+function lineitemedit_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
+  if ('CRM_Batch_Form_Entry' == $formName && empty($errors)) {
+    CRM_Lineitemedit_Util::disableEnablePriceField();
   }
 }
 
@@ -259,7 +268,7 @@ function lineitemedit_civicrm_pre($op, $entity, $entityID, &$params) {
           'line_total' => CRM_Utils_Rule::cleanMoney($lineItem['line_total']),
           'price_field_value_id' => $lineItem['price_field_value_id'],
           'financial_type_id' => $lineItem['financial_type_id'],
-          'tax_amount' => CRM_Utils_Array::value('tax_amount', $lineitem),
+          'tax_amount' => CRM_Utils_Array::value('tax_amount', $lineItem),
         );
         $newLineItem[] = civicrm_api3('LineItem', 'create', $newLineItemParams)['id'];
       }
